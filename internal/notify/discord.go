@@ -17,6 +17,7 @@ const (
 )
 
 type CheckoutInfo struct {
+	Approved  bool
 	Success   bool
 	Store     string
 	EventID   string
@@ -27,7 +28,12 @@ type CheckoutInfo struct {
 	Error     string
 }
 
+const webhookUsername = "TM Checkout"
+
 func SendCheckout(successURL, failURL string, info CheckoutInfo) {
+	if !info.Approved {
+		return
+	}
 	if info.Success {
 		if err := postEmbed(successURL, successEmbed(info)); err != nil {
 			log.Printf("discord success webhook: %v", err)
@@ -43,6 +49,7 @@ func successEmbed(info CheckoutInfo) map[string]any {
 	return map[string]any{
 		"title": "Successful checkout",
 		"color": colorSuccess,
+		"footer": map[string]any{"text": "after Approve"},
 		"fields": []map[string]any{
 			field("Store", dash(info.Store, "US")),
 			field("Event ID", dash(info.EventID)),
@@ -63,6 +70,7 @@ func failEmbed(info CheckoutInfo) map[string]any {
 		"title":       "Payment failed",
 		"color":       colorFail,
 		"description": truncate("Checkout failed: "+errText, 4000),
+		"footer":      map[string]any{"text": "after Approve"},
 		"fields": []map[string]any{
 			field("Store", dash(info.Store, "US")),
 			field("Event ID", dash(info.EventID)),
@@ -78,7 +86,10 @@ func postEmbed(webhookURL string, embed map[string]any) error {
 	if webhookURL == "" {
 		return nil
 	}
-	body, err := json.Marshal(map[string]any{"embeds": []any{embed}})
+	body, err := json.Marshal(map[string]any{
+		"username": webhookUsername,
+		"embeds":   []any{embed},
+	})
 	if err != nil {
 		return err
 	}

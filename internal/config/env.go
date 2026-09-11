@@ -7,15 +7,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const (
-	defaultSuccessWebhook = "https://discordapp.com/api/webhooks/1547050836432130108/f8lONQ28k0GxLimCaejeZG25epuVdZYgrmyk5NFI3HyjkwRrOFIEpasST92sPLn_yY3x"
-	defaultFailWebhook    = "https://discordapp.com/api/webhooks/1547050909736112140/tKoa2JOvmctGZs3FE38fYf9kMlhwRE4voHEQxd9M6A0qMS1AUV_Gft5p6u8MkRlU8KNt"
-)
-
 type Env struct {
 	KagedCapKey           string
 	DiscordSuccessWebhook string
 	DiscordFailWebhook    string
+	DiscordLinksWebhook   string
+	DiscordBotToken       string
+	DiscordWatchBot       string
 }
 
 func Load() Env {
@@ -26,13 +24,20 @@ func Load() Env {
 			os.Getenv("KAGEDCAP_KEY"),
 			os.Getenv("KAGEDCAP_API_KEY"),
 		),
-		DiscordSuccessWebhook: firstNonEmpty(
-			os.Getenv("DISCORD_SUCCESS_WEBHOOK"),
-			defaultSuccessWebhook,
+		DiscordSuccessWebhook: strings.TrimSpace(os.Getenv("DISCORD_SUCCESS_WEBHOOK")),
+		DiscordFailWebhook:    strings.TrimSpace(os.Getenv("DISCORD_FAIL_WEBHOOK")),
+		DiscordLinksWebhook: firstNonEmpty(
+			os.Getenv("DISCORD_LINKS_WEBHOOK"),
+			os.Getenv("DISCORD_WATCH_WEBHOOK"),
 		),
-		DiscordFailWebhook: firstNonEmpty(
-			os.Getenv("DISCORD_FAIL_WEBHOOK"),
-			defaultFailWebhook,
+		DiscordBotToken: firstNonEmpty(
+			os.Getenv("DISCORD_BOT_TOKEN"),
+			os.Getenv("DISCORD_TOKEN"),
+		),
+		DiscordWatchBot: firstNonEmpty(
+			os.Getenv("DISCORD_WATCH_BOT"),
+			os.Getenv("DISCORD_DETECT_BOT"),
+			"Encore IO",
 		),
 	}
 }

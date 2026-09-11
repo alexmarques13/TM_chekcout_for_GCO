@@ -9,7 +9,6 @@ import (
 	"tm_checkout/internal/captcha"
 	"tm_checkout/internal/cards"
 	"tm_checkout/internal/config"
-	"tm_checkout/internal/notify"
 	"tm_checkout/internal/tm"
 )
 
@@ -36,20 +35,6 @@ func Run(linkURL, cardsPath string, cardIndex int) (Result, error) {
 	if res.Store == "" {
 		res.Store = "US"
 	}
-	if err != nil && strings.Contains(res.Error, "KagedCapKey is empty") {
-		return res, err
-	}
-	cfg := config.Load()
-	notify.SendCheckout(cfg.DiscordSuccessWebhook, cfg.DiscordFailWebhook, notify.CheckoutInfo{
-		Success:   res.Success,
-		Store:     res.Store,
-		EventID:   res.EventID,
-		Account:   res.Account,
-		Profile:   res.Profile,
-		CardLast4: res.CardLast4,
-		OrderID:   res.OrderID,
-		Error:     res.Error,
-	})
 	return res, err
 }
 

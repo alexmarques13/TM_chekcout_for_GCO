@@ -1,6 +1,7 @@
 # secrets
 .env
 cards.csv
+pending_carts.json
 
 # binaries
 *.exe

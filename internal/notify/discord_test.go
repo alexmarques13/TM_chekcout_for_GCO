@@ -14,6 +14,10 @@ func TestSuccessEmbedFields(t *testing.T) {
 	if embed["title"] != "Successful checkout" {
 		t.Fatalf("title: %v", embed["title"])
 	}
+	footer, _ := embed["footer"].(map[string]any)
+	if footer["text"] != "after Approve" {
+		t.Fatalf("footer: %v", embed["footer"])
+	}
 	if embed["color"] != colorSuccess {
 		t.Fatalf("color: %v", embed["color"])
 	}
@@ -49,4 +53,11 @@ func TestFailEmbedStyle(t *testing.T) {
 	if len(fields) != 5 {
 		t.Fatalf("fail fields=%d want 5", len(fields))
 	}
+}
+
+func TestSendCheckoutRequiresApprove(t *testing.T) {
+	SendCheckout("https://example.invalid/webhook", "https://example.invalid/webhook", CheckoutInfo{
+		Success: false,
+		Error:   "should not post",
+	})
 }
