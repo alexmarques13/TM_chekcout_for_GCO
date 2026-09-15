@@ -50,7 +50,7 @@ func ReplyCart(s *discordgo.Session, ev Event, link string) error {
 		return fmt.Errorf("missing getLink")
 	}
 	_, err := s.ChannelMessageSendComplex(ev.ChannelID, &discordgo.MessageSend{
-		Content: "Cart detected. Approve to checkout or Deny to cancel.",
+		Content: "Cart detected. Approve or Deny.",
 		Components: []discordgo.MessageComponent{
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{
@@ -127,7 +127,7 @@ func handleCartButton(sess *discordgo.Session, i *discordgo.InteractionCreate) {
 		_ = sess.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseUpdateMessage,
 			Data: &discordgo.InteractionResponseData{
-				Content:    "Approved by **" + who + "** — checkout started.",
+				Content:    "Approved by **" + who + "**.",
 				Components: []discordgo.MessageComponent{},
 			},
 		})
@@ -138,7 +138,7 @@ func handleCartButton(sess *discordgo.Session, i *discordgo.InteractionCreate) {
 		_ = sess.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseUpdateMessage,
 			Data: &discordgo.InteractionResponseData{
-				Content:    "Denied by **" + who + "** — canceled. Checkout was not started.",
+				Content:    "Denied by **" + who + "** — canceled.",
 				Components: []discordgo.MessageComponent{},
 			},
 		})

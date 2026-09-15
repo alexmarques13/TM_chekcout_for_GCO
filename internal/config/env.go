@@ -8,7 +8,6 @@ import (
 )
 
 type Env struct {
-	KagedCapKey           string
 	DiscordSuccessWebhook string
 	DiscordFailWebhook    string
 	DiscordLinksWebhook   string
@@ -19,11 +18,6 @@ type Env struct {
 func Load() Env {
 	_ = godotenv.Load()
 	return Env{
-		KagedCapKey: firstNonEmpty(
-			os.Getenv("KagedCapKey"),
-			os.Getenv("KAGEDCAP_KEY"),
-			os.Getenv("KAGEDCAP_API_KEY"),
-		),
 		DiscordSuccessWebhook: strings.TrimSpace(os.Getenv("DISCORD_SUCCESS_WEBHOOK")),
 		DiscordFailWebhook:    strings.TrimSpace(os.Getenv("DISCORD_FAIL_WEBHOOK")),
 		DiscordLinksWebhook: firstNonEmpty(

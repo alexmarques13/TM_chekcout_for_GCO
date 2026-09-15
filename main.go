@@ -8,11 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"sync/atomic"
 
-	"tm_checkout/internal/cards"
-	"tm_checkout/internal/checkout"
 	"tm_checkout/internal/color"
 	"tm_checkout/internal/config"
 	"tm_checkout/internal/discordwatch"
@@ -40,11 +37,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if _, err := cards.LoadAll("cards.csv"); err != nil {
-		fmt.Println(color.Paint(color.Red, err.Error()))
-		os.Exit(1)
-	}
-
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
@@ -63,54 +55,25 @@ func main() {
 	}
 
 	var (
-		msgN     atomic.Int32
-		seq      atomic.Int32
-		cardNext cards.Rotator
-		mu       sync.Mutex
-		doneN    int
-		okN      int
-		failN    int
-		spentN   float64
+		msgN atomic.Int32
+		seq  atomic.Int32
 	)
 
-	runApproved := func(cart discordwatch.Cart, who string) {
+	discordwatch.BindCartButtons(func(cart discordwatch.Cart, who string) {
 		n := int(seq.Add(1))
-		card, cardIdx, cardTotal, cardErr := cardNext.Next("cards.csv")
-		if cardErr != nil {
-			fmt.Println(color.Paint(color.Red, "cards.csv: "+cardErr.Error()))
-			return
-		}
-		fmt.Println(color.Paint(color.Cyan, summary.Approved(n, who, cart.Link, cardIdx, cardTotal, card.Last4())))
-		res, runErr := checkout.Run(cart.Link, "cards.csv", cardIdx)
-		errText := res.Error
-		if errText == "" && runErr != nil {
-			errText = runErr.Error()
-		}
-		notify.SendCheckout(cfg.DiscordSuccessWebhook, cfg.DiscordFailWebhook, notify.CheckoutInfo{
-			Approved:  true,
-			Success:   res.Success,
-			Store:     res.Store,
-			EventID:   res.EventID,
-			Account:   res.Account,
-			Profile:   res.Profile,
-			CardLast4: res.CardLast4,
-			OrderID:   res.OrderID,
-			Error:     errText,
+		fmt.Println(color.Paint(color.Cyan, summary.Approved(n, who, cart.Link)))
+		notify.SendCart(cfg.DiscordSuccessWebhook, cfg.DiscordFailWebhook, notify.CartInfo{
+			Approved: true,
+			Who:      who,
+			Link:     cart.Link,
 		})
-		mu.Lock()
-		doneN++
-		if res.Success {
-			okN++
-			spentN += res.SpentUSD
-		} else {
-			failN++
-		}
-		fmt.Println(formatResult(n, cart.Link, res, doneN, okN, failN, spentN))
-		mu.Unlock()
-	}
-
-	discordwatch.BindCartButtons(runApproved, func(cart discordwatch.Cart, who string) {
+	}, func(cart discordwatch.Cart, who string) {
 		fmt.Println(color.Paint(color.Red, summary.Denied(who, cart.Link)))
+		notify.SendCart(cfg.DiscordSuccessWebhook, cfg.DiscordFailWebhook, notify.CartInfo{
+			Approved: false,
+			Who:      who,
+			Link:     cart.Link,
+		})
 	})
 
 	loaded, err := discordwatch.InitPending("pending_carts.json")
@@ -149,26 +112,4 @@ func main() {
 		fmt.Println(color.Paint(color.Cyan, summary.LoadedPending(loaded)))
 	}
 	select {}
-}
-
-func formatResult(index int, raw string, res checkout.Result, done, ok, failed int, totalSpent float64) string {
-	line := summary.CheckoutLine(summary.Result{
-		Index:      index,
-		Link:       raw,
-		Success:    res.Success,
-		Expired:    res.Expired,
-		EventID:    res.EventID,
-		OrderID:    res.OrderID,
-		CardLast4:  res.CardLast4,
-		SpentUSD:   res.SpentUSD,
-		Error:      res.Error,
-		Done:       done,
-		OK:         ok,
-		Fail:       failed,
-		TotalSpent: totalSpent,
-	})
-	if res.Success {
-		return color.BoldPaint(color.Green, line)
-	}
-	return color.BoldPaint(color.Red, line)
 }

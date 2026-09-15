@@ -2,27 +2,19 @@ package notify
 
 import "testing"
 
-func TestSuccessEmbedFields(t *testing.T) {
-	embed := successEmbed(CheckoutInfo{
-		Store:     "US",
-		EventID:   "0D006378E4049EE0",
-		Account:   "acct@example.com",
-		Profile:   "profile@example.com",
-		CardLast4: "4242",
-		OrderID:   "53-37593/FLO",
+func TestApprovedEmbedFields(t *testing.T) {
+	embed := approvedEmbed(CartInfo{
+		Who:  "alice",
+		Link: "https://encsoft.app/api/bot/getLink?id=ABC123",
 	})
-	if embed["title"] != "Successful checkout" {
+	if embed["title"] != "Cart approved" {
 		t.Fatalf("title: %v", embed["title"])
-	}
-	footer, _ := embed["footer"].(map[string]any)
-	if footer["text"] != "after Approve" {
-		t.Fatalf("footer: %v", embed["footer"])
 	}
 	if embed["color"] != colorSuccess {
 		t.Fatalf("color: %v", embed["color"])
 	}
 	fields := embed["fields"].([]map[string]any)
-	want := []string{"Store", "Event ID", "Account", "Profile", "Card", "Order"}
+	want := []string{"By", "Link"}
 	if len(fields) != len(want) {
 		t.Fatalf("fields=%d want %d", len(fields), len(want))
 	}
@@ -33,31 +25,19 @@ func TestSuccessEmbedFields(t *testing.T) {
 	}
 }
 
-func TestFailEmbedStyle(t *testing.T) {
-	embed := failEmbed(CheckoutInfo{
-		Error:     `[{"code":"U103","message":"We were unable to process your credit card"}]`,
-		Store:     "US",
-		EventID:   "07006348AEEB3AAA",
-		Account:   "acct@example.com",
-		Profile:   "profile@example.com",
-		CardLast4: "4242",
+func TestDeniedEmbedStyle(t *testing.T) {
+	embed := deniedEmbed(CartInfo{
+		Who:  "bob",
+		Link: "https://encsoft.app/api/bot/getLink?id=DEF456",
 	})
-	if embed["title"] != "Payment failed" {
+	if embed["title"] != "Cart denied" {
 		t.Fatalf("title: %v", embed["title"])
 	}
-	desc, _ := embed["description"].(string)
-	if desc[:16] != "Checkout failed:" {
-		t.Fatalf("description: %q", desc)
+	if embed["color"] != colorFail {
+		t.Fatalf("color: %v", embed["color"])
 	}
 	fields := embed["fields"].([]map[string]any)
-	if len(fields) != 5 {
-		t.Fatalf("fail fields=%d want 5", len(fields))
+	if len(fields) != 2 {
+		t.Fatalf("deny fields=%d want 2", len(fields))
 	}
-}
-
-func TestSendCheckoutRequiresApprove(t *testing.T) {
-	SendCheckout("https://example.invalid/webhook", "https://example.invalid/webhook", CheckoutInfo{
-		Success: false,
-		Error:   "should not post",
-	})
 }

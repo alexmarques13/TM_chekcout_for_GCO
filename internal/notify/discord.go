@@ -16,67 +16,44 @@ const (
 	colorFail    = 0xe74c3c
 )
 
-type CheckoutInfo struct {
-	Approved  bool
-	Success   bool
-	Store     string
-	EventID   string
-	Account   string
-	Profile   string
-	CardLast4 string
-	OrderID   string
-	Error     string
+type CartInfo struct {
+	Approved bool
+	Who      string
+	Link     string
 }
 
-const webhookUsername = "TM Checkout"
+const webhookUsername = "Cart Watch"
 
-func SendCheckout(successURL, failURL string, info CheckoutInfo) {
-	if !info.Approved {
-		return
-	}
-	if info.Success {
-		if err := postEmbed(successURL, successEmbed(info)); err != nil {
+func SendCart(successURL, failURL string, info CartInfo) {
+	if info.Approved {
+		if err := postEmbed(successURL, approvedEmbed(info)); err != nil {
 			log.Printf("discord success webhook: %v", err)
 		}
 		return
 	}
-	if err := postEmbed(failURL, failEmbed(info)); err != nil {
+	if err := postEmbed(failURL, deniedEmbed(info)); err != nil {
 		log.Printf("discord fail webhook: %v", err)
 	}
 }
 
-func successEmbed(info CheckoutInfo) map[string]any {
+func approvedEmbed(info CartInfo) map[string]any {
 	return map[string]any{
-		"title": "Successful checkout",
+		"title": "Cart approved",
 		"color": colorSuccess,
-		"footer": map[string]any{"text": "after Approve"},
 		"fields": []map[string]any{
-			field("Store", dash(info.Store, "US")),
-			field("Event ID", dash(info.EventID)),
-			field("Account", dash(info.Account)),
-			field("Profile", dash(firstNonEmpty(info.Profile, info.Account))),
-			field("Card", dash(info.CardLast4)),
-			field("Order", dash(info.OrderID)),
+			field("By", dash(info.Who)),
+			field("Link", dash(info.Link)),
 		},
 	}
 }
 
-func failEmbed(info CheckoutInfo) map[string]any {
-	errText := strings.TrimSpace(info.Error)
-	if errText == "" {
-		errText = "unknown error"
-	}
+func deniedEmbed(info CartInfo) map[string]any {
 	return map[string]any{
-		"title":       "Payment failed",
-		"color":       colorFail,
-		"description": truncate("Checkout failed: "+errText, 4000),
-		"footer":      map[string]any{"text": "after Approve"},
+		"title": "Cart denied",
+		"color": colorFail,
 		"fields": []map[string]any{
-			field("Store", dash(info.Store, "US")),
-			field("Event ID", dash(info.EventID)),
-			field("Account", dash(info.Account)),
-			field("Profile", dash(firstNonEmpty(info.Profile, info.Account))),
-			field("Card", dash(info.CardLast4)),
+			field("By", dash(info.Who)),
+			field("Link", dash(info.Link)),
 		},
 	}
 }
@@ -125,20 +102,4 @@ func dash(vals ...string) string {
 		}
 	}
 	return "—"
-}
-
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if s := strings.TrimSpace(v); s != "" {
-			return s
-		}
-	}
-	return ""
-}
-
-func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n-3] + "..."
 }
